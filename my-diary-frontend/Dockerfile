@@ -1,6 +1,6 @@
 # node 이미지 빌드
 FROM node:24-slim AS build
-p',.
+
 # 작업 디렉토리 생성 및 설정
 WORKDIR /app
 

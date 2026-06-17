@@ -41,8 +41,6 @@ function App() {
     if (loading || loadFailed || (!hasMore && nextPage !== 0)) return;
 
     setLoading(true);
-
-    // 새로 조회를 시도할 때 이전 에러 메시지를 지웁니다.
     setErrorMessage("");
 
     try {
@@ -50,6 +48,14 @@ function App() {
         `${API_BASE_URL}/diaries?page=${nextPage}&size=10`,
       );
 
+      // ✨ [수정] 404 응답이 오면 에러를 던지지 않고 "마지막 페이지"로 정상 처리합니다.
+      if (res.status === 404) {
+        setHasMore(false);
+        setLoading(false);
+        return;
+      }
+
+      // 404가 아닌 다른 에러(500 등)일 때만 실패 처리로 넘깁니다.
       if (!res.ok) {
         throw new Error("다이어리 목록 조회 실패");
       }
@@ -57,23 +63,19 @@ function App() {
       const data = await res.json();
 
       if (nextPage === 0) {
-        setDiaries(data.items);
+        setDiaries(data.items || []);
       } else {
-        setDiaries((prev) => [...prev, ...data.items]);
+        setDiaries((prev) => [...prev, ...(data.items || [])]);
       }
 
       setHasMore(data.hasMore);
       setPage(nextPage);
-
-      // 정상 조회되면 실패 상태를 해제합니다.
       setLoadFailed(false);
     } catch (error) {
       console.error(error);
 
-      // 실패 상태로 바꿔서 무한스크롤이 같은 요청을 반복하지 않게 합니다.
       setLoadFailed(true);
       setHasMore(false);
-
       setErrorMessage(
         "다이어리 목록을 불러오지 못했습니다. 백엔드 서버 또는 Nginx proxy 설정을 확인하세요.",
       );
